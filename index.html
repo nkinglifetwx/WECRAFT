@@ -615,9 +615,9 @@ async function renderAuthState(){
       </div>`;
     // Si on est déjà connecté (ex: reload de page), on affiche direct le dashboard, sans animation
     const overlayEl = document.getElementById('ignite-overlay');
-    if (!overlayEl || !overlayEl.classList.contains('active')) {
-      showDashboard();
-    }
+if (!overlayEl || !overlayEl.classList.contains('active')) {
+  showDashboard();
+}
   } catch(e) { console.error(e); }
 }
 

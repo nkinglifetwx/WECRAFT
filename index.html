@@ -541,7 +541,7 @@ body.dashboard-mode #main-site{ display:none; }
   }, {threshold:0.12});
   revealEls.forEach(el=>io.observe(el));
   const WORKER_URL = 'https://relink-auth.refugeemeraudien-direction.workers.dev'; 
-const DISCORD_CLIENT_ID = '1333801116692910172';
+const DISCORD_CLIENT_ID = '1540761974701559859';
 const REDIRECT_URI = encodeURIComponent(window.location.origin + window.location.pathname);
 
 function openAuthModal(){ document.getElementById('auth-overlay').classList.add('open'); }
@@ -560,10 +560,15 @@ async function handleDiscordCallback(){
   const code = params.get('code');
   const state = params.get('state');
   if (!code) return;
-  if (callbackHandled) return; // évite le double échange du code (Discord invalide un code déjà utilisé -> 401)
+  if (callbackHandled) return; // évite le double échange du code (Discord invalide un code déjà utilisé -> invalid_grant)
   if (state !== sessionStorage.getItem('oauth_state')) return;
   callbackHandled = true;
   sessionStorage.removeItem('oauth_state');
+
+  // Nettoie l'URL TOUT DE SUITE, avant même l'appel réseau : ainsi, même si
+  // l'échange échoue (erreur réseau, 401, invalid_grant...), un reload de la
+  // page ne pourra jamais retenter avec ce même code déjà consommé/expiré.
+  window.history.replaceState({}, '', window.location.pathname);
 
   try {
     const res = await fetch(`${WORKER_URL}/auth/discord`, {
@@ -572,9 +577,10 @@ async function handleDiscordCallback(){
       body: JSON.stringify({ code, redirect_uri: window.location.origin + window.location.pathname }),
     });
     const data = await res.json();
-    if (data.token) {
-      localStorage.setItem('wecraft_token', data.token);
-      window.history.replaceState({}, '', window.location.pathname);
+    // Le Worker renvoie le JWT dans "access_token" (pas "token")
+    const receivedToken = data.access_token || data.token;
+    if (receivedToken) {
+      localStorage.setItem('wecraft_token', receivedToken);
       // Connexion vient d'aboutir : on déclenche l'animation d'envol du phénix
       await renderAuthState();
       playIgniteTransition();

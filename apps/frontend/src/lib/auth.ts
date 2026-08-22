@@ -1,4 +1,4 @@
-import { loginDiscord } from './api';
+import { loginDiscord, checkWorkerHealth } from './api';
 
 const DISCORD_CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '';
 const REDIRECT_URI = process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || 'http://localhost:3000/auth/callback';
@@ -13,10 +13,53 @@ export function getDiscordAuthUrl(): string {
   return `https://discord.com/api/oauth2/authorize?${params.toString()}`;
 }
 
-export async function handleAuthCallback(code: string): Promise<void> {
-  const data = await loginDiscord(code, REDIRECT_URI);
-  localStorage.setItem('auth_token', data.access_token);
-  localStorage.setItem('user', JSON.stringify(data));
+/**
+ * Vérifie si le Worker est accessible avant de rediriger vers Discord
+ */
+export async function checkWorkerConnection(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const isHealthy = await checkWorkerHealth();
+    if (!isHealthy) {
+      return {
+        ok: false,
+        error: 'Le serveur ReLink est actuellement inaccessible. Veuillez réessayer dans quelques instants.',
+      };
+    }
+    return { ok: true };
+  } catch {
+    return {
+      ok: false,
+      error: 'Impossible de vérifier la connexion au serveur ReLink.',
+    };
+  }
+}
+
+/**
+ * Traite le callback Discord : échange le code pour un token
+ */
+export async function handleAuthCallback(code: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Vérifier que le Worker est accessible
+    const health = await checkWorkerConnection();
+    if (!health.ok) {
+      return { success: false, error: health.error };
+    }
+
+    // Envoyer le code au Worker
+    const data = await loginDiscord(code, REDIRECT_URI);
+
+    // Stocker le token et les données utilisateur
+    localStorage.setItem('auth_token', data.access_token);
+    localStorage.setItem('user', JSON.stringify(data));
+
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur d\'authentification inconnue';
+    return {
+      success: false,
+      error: message,
+    };
+  }
 }
 
 export function getToken(): string | null {

@@ -592,6 +592,27 @@ body.phoenix-lock { overflow:hidden !important; }
   #phoenix-transition { display:none !important; }
 }
 
+  .auth-status {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  min-height: 22px;
+  transition: all 0.3s ease;
+}
+
+.auth-status.success {
+  color: #5cff9d;
+}
+
+.auth-status.error {
+  color: #ff6565;
+}
+
+.auth-status.loading {
+  color: #ffd166;
+}
+  
 </style>
 </head>
 <body>
@@ -620,6 +641,9 @@ body.phoenix-lock { overflow:hidden !important; }
   <div class="nav-auth" id="nav-auth">
     <button class="btn-login" onclick="openAuthModal()">Connexion</button>
   </div>
+  <div id="auth-status" class="auth-status">
+  🔵 <span>En attente de connexion</span>
+</div>
 </header>
 
 
@@ -657,19 +681,27 @@ const REDIRECT_URI = encodeURIComponent(window.location.origin + window.location
 function openAuthModal(){ document.getElementById('auth-overlay').classList.add('open'); }
 function closeAuthModal(){ document.getElementById('auth-overlay').classList.remove('open'); }
 
-function loginWithDiscord(){
+function loginWithDiscord() {
+  setAuthStatus(
+    "🟡 <span>Redirection vers Discord...</span>",
+    "loading"
+  );
+
   const state = crypto.randomUUID();
-  sessionStorage.setItem('oauth_state', state);
 
-  // IMPORTANT : la page va être rechargée par le retour OAuth Discord.
-  // On garde donc un drapeau pour lancer la cinématique dès que l'auth est validée.
-  sessionStorage.setItem('phoenix_login_pending', '1');
+  sessionStorage.setItem("oauth_state", state);
 
-  const url = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=identify&state=${state}`;
+  const url =
+    `https://discord.com/api/oauth2/authorize` +
+    `?client_id=${DISCORD_CLIENT_ID}` +
+    `&redirect_uri=${REDIRECT_URI}` +
+    `&response_type=code` +
+    `&scope=identify` +
+    `&state=${state}`;
+
   window.location.href = url;
 }
-
-
+  
 function playPhoenixTransition(){
   const t = document.getElementById('phoenix-transition');
   if (!t) {
@@ -694,49 +726,87 @@ function playPhoenixTransition(){
   }, 4750);
 }
 
-async function handleDiscordCallback(){
+async function handleDiscordCallback() {
   const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  const state = params.get('state');
+
+  const code = params.get("code");
+  const state = params.get("state");
+
   if (!code) return;
-  if (state !== sessionStorage.getItem('oauth_state')) return;
+
+  setAuthStatus(
+    "🟡 <span>Retour de Discord reçu...</span>",
+    "loading"
+  );
+
+  if (state !== sessionStorage.getItem("oauth_state")) {
+    setAuthStatus(
+      "🔴 <span>Erreur : session Discord invalide.</span>",
+      "error"
+    );
+
+    return;
+  }
+
+  setAuthStatus(
+    "🟡 <span>Vérification de ton compte...</span>",
+    "loading"
+  );
 
   try {
     const res = await fetch(`${WORKER_URL}/auth/discord`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, redirect_uri: window.location.origin + window.location.pathname }),
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        code,
+        redirect_uri: window.location.origin + window.location.pathname
+      })
     });
+
     const data = await res.json();
+
+    console.log("Réponse Worker Discord :", data);
+
     if (data.token) {
-      localStorage.setItem('wecraft_token', data.token);
-      window.history.replaceState({}, '', window.location.pathname);
+
+      localStorage.setItem("wecraft_token", data.token);
+
+      setAuthStatus(
+        "🟢 <span>Connexion réussie !</span>",
+        "success"
+      );
+
+      window.history.replaceState(
+        {},
+        "",
+        window.location.pathname
+      );
+
       renderAuthState();
 
-      // Retour OAuth Discord réussi : lance toujours la cinématique.
-      // Aucun flag sessionStorage n'est nécessaire.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => playPhoenixTransition());
-      });
+    } else {
+
+      setAuthStatus(
+        "🔴 <span>Discord a répondu, mais aucun token n'a été reçu.</span>",
+        "error"
+      );
+
+      console.error("Réponse d'authentification :", data);
     }
-  } catch(e) { console.error('Erreur auth Discord', e); }
-}
 
-async function renderAuthState(){
-  const token = localStorage.getItem('wecraft_token');
-  const nav = document.getElementById('nav-auth');
-  if (!token) { nav.innerHTML = `<button class="btn-login" onclick="openAuthModal()">Connexion</button>`; return; }
+  } catch (error) {
 
-  try {
-    const res = await fetch(`${WORKER_URL}/me`, { headers: { 'Authorization': `Bearer ${token}` } });
-    const user = await res.json();
-    if (!user || user.error) { localStorage.removeItem('wecraft_token'); nav.innerHTML = `<button class="btn-login" onclick="openAuthModal()">Connexion</button>`; return; }
-    nav.innerHTML = `
-      <div class="user-chip" onclick="logout()" title="Se déconnecter">
-        <img src="${user.avatar_url || ''}" alt="">
-        <span>${user.pseudo || 'Membre'}</span>
-      </div>`;
-  } catch(e) { console.error(e); }
+    console.error("Erreur authentification :", error);
+
+    setAuthStatus(
+      `🔴 <span>Erreur de connexion : ${error.message}</span>`,
+      "error"
+    );
+  }
 }
 
 function logout(){
@@ -746,6 +816,20 @@ function logout(){
 
 handleDiscordCallback();
 renderAuthState();
+
+  function setAuthStatus(message, type = "") {
+  const status = document.getElementById("auth-status");
+
+  if (!status) return;
+
+  status.className = "auth-status";
+
+  if (type) {
+    status.classList.add(type);
+  }
+
+  status.innerHTML = message;
+}
 </script>
 
 <div class="auth-overlay" id="auth-overlay">
@@ -753,10 +837,17 @@ renderAuthState();
     <button class="auth-close" onclick="closeAuthModal()">&times;</button>
     <h3>Rejoindre WeCraft</h3>
     <p>Connecte-toi avec ton compte Discord pour accéder à l'écosystème.</p>
-    <button class="btn-discord" onclick="loginWithDiscord()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.955 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-      Continuer avec Discord
-    </button>
+   <button class="btn-discord" onclick="loginWithDiscord()">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <!-- ton SVG actuel -->
+  </svg>
+
+  Continuer avec Discord
+</button>
+
+<div id="auth-status" class="auth-status">
+  🔵 <span>En attente de connexion</span>
+</div>
   </div>
 </div>
 </body>

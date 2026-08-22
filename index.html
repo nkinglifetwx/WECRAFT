@@ -651,7 +651,7 @@ body.phoenix-lock { overflow:hidden !important; }
   }, {threshold:0.12});
   revealEls.forEach(el=>io.observe(el));
   const WORKER_URL = 'https://relink-auth.refugeemeraudien-direction.workers.dev/'; 
-const DISCORD_CLIENT_ID = '1540761974701559859';
+const DISCORD_CLIENT_ID = '1333801116692910172';
 const REDIRECT_URI = encodeURIComponent(window.location.origin + window.location.pathname);
 
 function openAuthModal(){ document.getElementById('auth-overlay').classList.add('open'); }
@@ -711,17 +711,13 @@ async function handleDiscordCallback(){
     if (data.token) {
       localStorage.setItem('wecraft_token', data.token);
       window.history.replaceState({}, '', window.location.pathname);
-
-      // Le token est maintenant valide : on peut révéler la page derrière la cinématique.
       renderAuthState();
 
-      if (sessionStorage.getItem('phoenix_login_pending') === '1') {
-        sessionStorage.removeItem('phoenix_login_pending');
-        // Laisse le DOM terminer son premier rendu avant de lancer l'animation.
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => playPhoenixTransition());
-        });
-      }
+      // Retour OAuth Discord réussi : lance toujours la cinématique.
+      // Aucun flag sessionStorage n'est nécessaire.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => playPhoenixTransition());
+      });
     }
   } catch(e) { console.error('Erreur auth Discord', e); }
 }

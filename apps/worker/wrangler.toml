@@ -1,0 +1,11 @@
+name = "relink-wecraft"
+main = "src/worker.js"
+compatibility_date = "2024-01-15"
+
+[[d1_databases]]
+binding = "relinkdb"
+database_name = "relink"
+database_id = "YOUR_D1_DATABASE_ID"
+
+[env.production]
+vars = { WORKER_URL = "https://relink-auth.refugeemeraudien-direction.workers.dev" }

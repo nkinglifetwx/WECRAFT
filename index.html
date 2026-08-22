@@ -540,7 +540,7 @@ body.dashboard-mode #main-site{ display:none; }
     });
   }, {threshold:0.12});
   revealEls.forEach(el=>io.observe(el));
-  const WORKER_URL = 'https://relink-auth.refugeemeraudien-direction.workers.dev/'; 
+  const WORKER_URL = 'https://relink-auth.refugeemeraudien-direction.workers.dev'; 
 const DISCORD_CLIENT_ID = '1540761974701559859';
 const REDIRECT_URI = encodeURIComponent(window.location.origin + window.location.pathname);
 
@@ -602,7 +602,8 @@ async function renderAuthState(){
         <span>${user.pseudo || 'Membre'}</span>
       </div>`;
     // Si on est déjà connecté (ex: reload de page), on affiche direct le dashboard, sans animation
-    if (!document.getElementById('ignite-overlay').classList.contains('active')) {
+    const overlayEl = document.getElementById('ignite-overlay');
+    if (!overlayEl || !overlayEl.classList.contains('active')) {
       showDashboard();
     }
   } catch(e) { console.error(e); }
@@ -610,12 +611,14 @@ async function renderAuthState(){
 
 function showMainSite(){
   document.body.classList.remove('dashboard-mode');
-  document.getElementById('dashboard').classList.remove('active');
+  const dash = document.getElementById('dashboard');
+  if (dash) dash.classList.remove('active');
 }
 
 function showDashboard(){
   document.body.classList.add('dashboard-mode');
-  document.getElementById('dashboard').classList.add('active');
+  const dash = document.getElementById('dashboard');
+  if (dash) dash.classList.add('active');
 }
 
 function playIgniteTransition(){

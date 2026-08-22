@@ -541,7 +541,7 @@ body.dashboard-mode #main-site{ display:none; }
   }, {threshold:0.12});
   revealEls.forEach(el=>io.observe(el));
   const WORKER_URL = 'https://relink-auth.refugeemeraudien-direction.workers.dev'; 
-const DISCORD_CLIENT_ID = '1333801116692910172';
+const DISCORD_CLIENT_ID = '1540761974701559859';
 const REDIRECT_URI = encodeURIComponent(window.location.origin + window.location.pathname);
 
 function openAuthModal(){ document.getElementById('auth-overlay').classList.add('open'); }
@@ -581,8 +581,10 @@ async function handleDiscordCallback(){
     const receivedToken = data.access_token || data.token;
     if (receivedToken) {
       localStorage.setItem('wecraft_token', receivedToken);
-      // Connexion vient d'aboutir : on déclenche l'animation d'envol du phénix
-      await renderAuthState();
+      // Connexion vient d'aboutir : on met à jour la nav SANS afficher le
+      // dashboard tout de suite, puis on déclenche l'animation d'envol du
+      // phénix — c'est elle qui affichera le dashboard, au bon moment.
+      await renderAuthState({ skipDashboard: true });
       playIgniteTransition();
     } else {
       console.error('Auth Discord: pas de token reçu', data);
@@ -590,7 +592,7 @@ async function handleDiscordCallback(){
   } catch(e) { console.error('Erreur auth Discord', e); }
 }
 
-async function renderAuthState(){
+async function renderAuthState(options = {}){
   const token = localStorage.getItem('wecraft_token');
   const nav = document.getElementById('nav-auth');
   if (!token) {
@@ -613,11 +615,13 @@ async function renderAuthState(){
         <img src="${user.avatar_url || ''}" alt="">
         <span>${user.pseudo || 'Membre'}</span>
       </div>`;
-    // Si on est déjà connecté (ex: reload de page), on affiche direct le dashboard, sans animation
-    const overlayEl = document.getElementById('ignite-overlay');
-if (!overlayEl || !overlayEl.classList.contains('active')) {
-  showDashboard();
-}
+    // Si on est déjà connecté (ex: reload de page), on affiche direct le
+    // dashboard, sans animation. Mais si on est en plein flux de connexion
+    // fraîche (skipDashboard), c'est playIgniteTransition() qui décide
+    // du moment où le dashboard apparaît, pas nous.
+    if (!options.skipDashboard) {
+      showDashboard();
+    }
   } catch(e) { console.error(e); }
 }
 
@@ -650,8 +654,15 @@ function logout(){
   renderAuthState();
 }
 
-handleDiscordCallback();
-renderAuthState();
+// Au chargement : si un callback Discord est en cours (paramètre ?code=...),
+// on le traite en priorité — lui seul gère l'affichage (nav + dashboard +
+// animation). Sinon, on affiche l'état d'auth normalement (reload de page).
+const pendingCode = new URLSearchParams(window.location.search).get('code');
+if (pendingCode) {
+  handleDiscordCallback();
+} else {
+  renderAuthState();
+}
 </script>
 
 <div class="auth-overlay" id="auth-overlay">

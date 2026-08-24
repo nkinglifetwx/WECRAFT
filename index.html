@@ -463,24 +463,95 @@
 #ignite-overlay.active .ignite-flames{ animation: igniteFlamesRise 2.6s ease forwards; }
 #ignite-overlay.active .ignite-label{ animation: igniteLabelFade 2.2s ease forwards 0.3s; }
 
-/* ---------- DASHBOARD (post-login placeholder) ---------- */
+/* ---------- DASHBOARD (post-login home) ---------- */
 #dashboard{
-  display:none; min-height:100vh; padding:120px 6vw 60px; position:relative; z-index:1;
+  display:none; min-height:100vh; position:relative; z-index:1;
   animation: fadeUp 0.9s ease forwards;
 }
 #dashboard.active{ display:block; }
 body.dashboard-mode #main-site{ display:none; }
-.dash-header{ margin-bottom:44px; }
-.dash-header .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-family:'JetBrains Mono',monospace; font-size:0.74rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--ember-2); margin-bottom:16px; }
-.dash-header h1{ font-size:clamp(1.8rem,4vw,2.6rem); font-weight:700; }
-.dash-header p{ color:var(--text-dim); margin-top:10px; max-width:60ch; line-height:1.6; }
-.dash-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:40px; }
-@media (max-width:880px){ .dash-grid{ grid-template-columns:1fr; } }
-.dash-card{ border:1px solid var(--line); border-radius:16px; padding:26px; background:linear-gradient(160deg,var(--bg-1),var(--bg-2)); min-height:140px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; color:var(--text-faint); font-family:'JetBrains Mono',monospace; font-size:0.76rem; letter-spacing:0.06em; }
-.dash-card .ph{ font-size:1.6rem; margin-bottom:8px; opacity:0.5; }
-.dash-logout{ margin-top:50px; }
-.dash-logout button{ background:transparent; border:1px solid var(--line-strong); color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:0.75rem; letter-spacing:0.06em; padding:10px 20px; border-radius:8px; cursor:pointer; transition:color .2s,border-color .2s; }
-.dash-logout button:hover{ color:var(--ember-2); border-color:var(--ember-1); }
+
+/* top bar (logo + user chip), reused above the sidebar layout */
+.dash-topbar{
+  position:fixed; top:0; left:0; right:0; z-index:45;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px 5vw 20px 90px;
+  background:linear-gradient(to bottom, rgba(5,6,12,0.85), rgba(5,6,12,0));
+}
+.dash-topbar .dash-logo{
+  font-family:'Unbounded',sans-serif; font-size:0.85rem; letter-spacing:0.16em; color:var(--text-dim);
+}
+.dash-topbar .nav-auth{ margin-top:0; min-height:auto; }
+
+/* left icon rail */
+.dash-sidebar{
+  position:fixed; left:0; top:0; bottom:0; width:74px; z-index:46;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px;
+  border-right:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(10,13,24,0.5), rgba(10,13,24,0.2));
+  backdrop-filter:blur(6px);
+}
+.dash-sidebar .rail-icon{
+  width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  color:var(--text-faint); cursor:pointer; transition:color 0.2s, background 0.2s;
+}
+.dash-sidebar .rail-icon svg{ width:19px; height:19px; }
+.dash-sidebar .rail-icon:hover{ color:var(--text); background:rgba(255,255,255,0.05); }
+.dash-sidebar .rail-icon.active{ color:var(--ember-2); background:rgba(255,90,54,0.1); }
+
+/* hero / recommended content */
+.dash-hero{ padding:150px 5vw 0 calc(74px + 4vw); max-width:900px; }
+.dash-hero .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-family:'JetBrains Mono',monospace; font-size:0.74rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--ember-2); margin-bottom:18px; }
+.dash-hero .eyebrow::before{ content:''; width:22px; height:1px; background:linear-gradient(90deg,var(--ember-1),var(--ember-2)); }
+.dash-hero h1{
+  font-size:clamp(2.2rem, 5vw, 4rem); font-weight:800; letter-spacing:-0.01em; line-height:1;
+  background:linear-gradient(180deg, #fdfaf3 20%, #cfd3e6 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.dash-hero .meta{
+  display:flex; align-items:center; gap:16px; margin-top:18px;
+  font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-dim); letter-spacing:0.02em;
+}
+.dash-hero .meta .match{ color:#7fe0a0; font-weight:600; }
+.dash-hero .lede{ color:var(--text-dim); font-size:0.98rem; line-height:1.7; max-width:60ch; margin:18px 0 0; }
+.dash-hero .actions{ display:flex; gap:14px; margin-top:30px; }
+.btn-play, .btn-later{
+  display:inline-flex; align-items:center; gap:9px; font-family:'Inter',sans-serif; font-weight:600;
+  font-size:0.88rem; padding:12px 24px; border-radius:9px; cursor:pointer; border:none;
+  transition:transform 0.2s, opacity 0.2s;
+}
+.btn-play{ background:linear-gradient(90deg, var(--ember-1), var(--ember-2)); color:#1a0f08; }
+.btn-play:hover{ transform:translateY(-2px); }
+.btn-later{ background:rgba(255,255,255,0.06); color:var(--text); border:1px solid var(--line-strong); }
+.btn-later:hover{ background:rgba(255,255,255,0.1); }
+
+/* horizontal recommendation rows */
+.dash-rows{ padding:56px 5vw 80px calc(74px + 4vw); }
+.dash-row{ margin-bottom:48px; }
+.dash-row-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; }
+.dash-row-head h3{ font-family:'Unbounded',sans-serif; font-size:1.02rem; font-weight:600; }
+.dash-row-head a{ font-family:'JetBrains Mono',monospace; font-size:0.74rem; letter-spacing:0.04em; color:var(--text-dim); text-decoration:none; }
+.dash-row-head a:hover{ color:var(--ember-2); }
+.dash-cards{ display:flex; gap:14px; overflow-x:auto; padding-bottom:10px; scrollbar-width:thin; }
+.dash-cards::-webkit-scrollbar{ height:6px; }
+.dash-cards::-webkit-scrollbar-thumb{ background:var(--line-strong); border-radius:6px; }
+.dash-card-item{
+  flex:0 0 168px; height:224px; border-radius:12px; padding:14px;
+  border:1px solid var(--line); background:linear-gradient(160deg, var(--bg-1), var(--bg-2));
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center;
+  transition:transform 0.25s, border-color 0.25s; cursor:pointer;
+}
+.dash-card-item:hover{ transform:translateY(-5px); border-color:var(--line-strong); }
+.dash-card-item .ph-icon{ font-size:1.7rem; color:var(--text-faint); opacity:0.55; }
+.dash-card-item .card-title{ font-family:'Inter',sans-serif; font-size:0.82rem; font-weight:600; color:var(--text); }
+.dash-card-item .card-sub{ font-family:'JetBrains Mono',monospace; font-size:0.66rem; color:var(--text-faint); letter-spacing:0.03em; }
+
+@media (max-width:820px){
+  .dash-sidebar{ width:56px; }
+  .dash-topbar{ padding-left:70px; }
+  .dash-hero{ padding-left:calc(56px + 5vw); }
+  .dash-rows{ padding-left:calc(56px + 5vw); }
+}
 
 </style>
 </head>
@@ -495,12 +566,11 @@ body.dashboard-mode #main-site{ display:none; }
   <div class="ignite-label">Connexion établie — Bienvenue</div>
 </div>
 
-<div id="main-site">
-
 <div id="starfield"></div>
 <div class="bg-glow glow-ember"></div>
 <div class="bg-glow glow-blue"></div>
 
+<div id="main-site">
 
 <header class="hero">
   <div class="phoenix-stage">
@@ -596,8 +666,10 @@ async function handleDiscordCallback(){
 async function renderAuthState(options = {}){
   const token = localStorage.getItem('wecraft_token');
   const nav = document.getElementById('nav-auth');
+  const navDash = document.getElementById('nav-auth-dash');
   if (!token) {
     nav.innerHTML = `<button class="btn-login" onclick="openAuthModal()">Connexion</button>`;
+    if (navDash) navDash.innerHTML = nav.innerHTML;
     showMainSite();
     return;
   }
@@ -608,6 +680,7 @@ async function renderAuthState(options = {}){
     if (!user || user.error) {
       localStorage.removeItem('wecraft_token');
       nav.innerHTML = `<button class="btn-login" onclick="openAuthModal()">Connexion</button>`;
+      if (navDash) navDash.innerHTML = nav.innerHTML;
       showMainSite();
       return;
     }
@@ -616,6 +689,7 @@ async function renderAuthState(options = {}){
         <img src="${user.avatar_url || ''}" alt="">
         <span>${user.pseudo || 'Membre'}</span>
       </div>`;
+    if (navDash) navDash.innerHTML = nav.innerHTML;
     // Si on est déjà connecté (ex: reload de page), on affiche direct le
     // dashboard, sans animation. Mais si on est en plein flux de connexion
     // fraîche (skipDashboard), c'est playIgniteTransition() qui décide
@@ -681,19 +755,73 @@ if (pendingCode) {
 </div><!-- /#main-site -->
 
 <div id="dashboard">
-  <div class="dash-header">
-    <div class="eyebrow">Espace membre</div>
-    <h1>Bienvenue sur WeCraft</h1>
-    <p>Ceci est une maquette vierge de la page d'accueil post-connexion. Le contenu réel (statut du clan, notifications, accès rapide) sera branché ici.</p>
+
+  <div class="dash-topbar">
+    <div class="dash-logo">WECRAFT</div>
+    <div class="nav-auth" id="nav-auth-dash"></div>
   </div>
-  <div class="dash-grid">
-    <div class="dash-card"><div class="ph">◆</div>Mon clan</div>
-    <div class="dash-card"><div class="ph">◆</div>Recherches</div>
-    <div class="dash-card"><div class="ph">◆</div>Statistiques</div>
+
+  <nav class="dash-sidebar">
+    <div class="rail-icon" title="Rechercher">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <div class="rail-icon active" title="Accueil">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+    </div>
+    <div class="rail-icon" title="Enregistrés">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
+    </div>
+  </nav>
+
+  <div class="dash-hero">
+    <div class="eyebrow">Recommandé pour vous</div>
+    <h1>Titre du contenu</h1>
+    <div class="meta">
+      <span class="match">98% pour vous</span>
+      <span>2026</span>
+      <span>Emplacement réservé</span>
+    </div>
+    <p class="lede">Cet espace affichera la description générée par le futur système de recommandation : synopsis, tags et pourquoi ce contenu est mis en avant pour l'utilisateur connecté.</p>
+    <div class="actions">
+      <button class="btn-play">▶ Lecture</button>
+      <button class="btn-later">🕓 Plus tard</button>
+    </div>
   </div>
-  <div class="dash-logout">
-    <button onclick="logout()">Se déconnecter</button>
+
+  <div class="dash-rows">
+
+    <div class="dash-row">
+      <div class="dash-row-head">
+        <h3>Recommandé pour vous</h3>
+        <a href="#">Tout voir</a>
+      </div>
+      <div class="dash-cards">
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+      </div>
+    </div>
+
+    <div class="dash-row">
+      <div class="dash-row-head">
+        <h3>Populaire sur WECRAFT</h3>
+        <a href="#">Tout voir</a>
+      </div>
+      <div class="dash-cards">
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+        <div class="dash-card-item"><div class="ph-icon">◆</div><div class="card-title">Titre exemple</div><div class="card-sub">Emplacement réservé</div></div>
+      </div>
+    </div>
+
   </div>
+
 </div>
 
 </body>
